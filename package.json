@@ -1,0 +1,37 @@
+{
+  "name": "mrdr",
+  "version": "0.0.1",
+  "author": "Matthias Hryniszak <padcom@gmail.com>",
+  "license": "Apache-2.0",
+  "type": "module",
+  "keywords": [
+    "monorepo",
+    "runner"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/padcom/mrdr"
+  },
+  "bugs": {
+    "url": "https://github.com/padcom/mrdr/issues"
+  },
+  "funding": {
+    "type": "patreon",
+    "url": "https://www.patreon.com/padcom"
+  },
+  "bin": {
+    "mrdr": "index.mjs"
+  },
+  "scripts": {
+    "build": "",
+    "prepublishOnly": "npm install && npm run build"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "wait-on": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/chalk": "^2.2.0"
+  }
+}
