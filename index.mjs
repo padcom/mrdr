@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile, utimes } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { spawn } from 'node:child_process'
+import { exec, spawn } from 'node:child_process'
 import readline from 'node:readline'
 import { join } from 'node:path'
 import waitOn from 'wait-on'
@@ -265,9 +265,27 @@ function getAdditionalArgs({ quiet }) {
   return args
 }
 
-async function executeTasks(tasks, script, { delay, timeout, quiet, verbose }) {
+function runProjectScript(project, script, { verbose }) {
+  return new Promise(resolve => {
+    const cmd = spawn('npm', ['run', script], { cwd: project.cwd, log: verbose })
+    cmd.on('exit', err => {
+      if (err) {
+        process.exit(err)
+      } else {
+        resolve()
+      }
+    })
+    printCommandOutput(project, cmd.stdout)
+    printCommandOutput(project, cmd.stderr)
+  })
+}
+
+async function executeTasks(tasks, script, { delay, timeout, quiet, verbose, clean }) {
   // execute each selected task
   return Promise.all(tasks.map(async task => {
+    if (clean && projectHasScript(task, clean)) {
+      await runProjectScript(task, clean, { verbose })
+    }
     executeProjectScript(task, script, ...getAdditionalArgs({ quiet }))
     await waitForTaskToProduceResources(task, { delay, timeout, verbose })
   }))
@@ -297,7 +315,8 @@ async function main(script, {
   quiet,
   verbose,
   viteReloadHack,
-  workspace
+  workspace,
+  clean,
 }) {
   const log = logger('main')
   if (quiet) logger.level = 2
@@ -317,7 +336,13 @@ async function main(script, {
 
   while (tasks.length > 0) {
     const current = getIndependentProjects(tasks)
-    await executeTasks(current, script, { delay, timeout: timeout * 1000, quiet, verbose })
+    await executeTasks(current, script, {
+      delay,
+      timeout: timeout * 1000,
+      quiet,
+      verbose,
+      clean: typeof clean === 'boolean' ? 'clean' : clean,
+    })
     dequeueTasks(current, tasks)
     clearDependencyToTasks(current, tasks)
   }
@@ -336,6 +361,7 @@ program
   .option('-d, --delay <ms>', 'Additional miliseconds to wait after the resource is created', 200)
   .option('-t, --timeout <s>', 'Max time in seconds to wait for resources to be generated', 10)
   .option('-w, --workspace <workspace>', 'Run only the given workspace and its dependencies', '')
+  .option('-C, --clean [task]', 'Call the "clean" task before building a project; defaults to "clean" task')
   .option('--vite-reload-hack', 'Install a hack that kicks dependent projects when a dependency is rebuilt')
   .action(main)
   .parse(process.argv)
