@@ -111,7 +111,7 @@ In the strictest sense you don't need them but it is surely a nice to have thing
 `mrdr` is a very young utility so the options are few at the moment:
 
 ```
-Usage: mrdr [options] [script]
+Usage: npx mrdr@latest [options] [script]
 
 Arguments:
   script                       Script to execute (default: "dev")
@@ -120,8 +120,8 @@ Options:
   -V, --version                output the version number
   -q, --quiet                  Be quiet
   -v, --verbose                Be verbose
-  -d, --delay <ms>             Additional time to wait after the resource is created (default: 200ms) (default: 200)
-  -t, --timeout <s>            Max time to wait for resources to be generated (default: 10s) (default: 10)
+  -d, --delay <ms>             Additional miliseconds to wait after the resource is created (default: 200)
+  -t, --timeout <s>            Max time in seconds to wait for resources to be generated (default: 10)
   -w, --workspace <workspace>  Run only the given workspace and its dependencies (default: "")
   --vite-reload-hack           Install a hack that kicks dependent projects when a dependency is rebuilt
   -h, --help                   display help for command
