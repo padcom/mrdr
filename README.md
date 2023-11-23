@@ -121,7 +121,7 @@ Options:
   -q, --quiet                  Be quiet
   -v, --verbose                Be verbose
   -d, --delay <ms>             Additional miliseconds to wait after the resource is created (default: 200)
-  -t, --timeout <s>            Max time in seconds to wait for resources to be generated (default: 10)
+  -t, --timeout <s>            Max time in seconds to wait for resources to be generated (default: 30)
   -w, --workspace <workspace>  Run only the given workspace and its dependencies (default: "")
   -C, --clean [task]           Call the "clean" task before building a project; defaults to "clean" task
   --vite-reload-hack           Install a hack that kicks dependent projects when a dependency is rebuilt
