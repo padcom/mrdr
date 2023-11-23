@@ -359,7 +359,7 @@ program
   .option('-q, --quiet', 'Be quiet')
   .option('-v, --verbose', 'Be verbose')
   .option('-d, --delay <ms>', 'Additional miliseconds to wait after the resource is created', 200)
-  .option('-t, --timeout <s>', 'Max time in seconds to wait for resources to be generated', 10)
+  .option('-t, --timeout <s>', 'Max time in seconds to wait for resources to be generated', 30)
   .option('-w, --workspace <workspace>', 'Run only the given workspace and its dependencies', '')
   .option('-C, --clean [task]', 'Call the "clean" task before building a project; defaults to "clean" task')
   .option('--vite-reload-hack', 'Install a hack that kicks dependent projects when a dependency is rebuilt')
