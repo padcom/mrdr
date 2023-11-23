@@ -9,6 +9,7 @@ import { cwd } from 'node:process'
 import { program } from 'commander'
 import chalk from 'chalk'
 import EventEmitter from 'node:events'
+import { globSync } from 'glob'
 
 // 1. read all package.json in the monorepo
 // 2. construct a dependency graph
@@ -66,6 +67,8 @@ logger.level = 3
 
 async function loadWorkspaces() {
   return JSON.parse(await readFile('package.json')).workspaces
+    .flatMap(entry => globSync(entry))
+    .filter(pkg => existsSync(join(pkg, 'package.json')))
 }
 
 async function loadPackages(workspaces) {
