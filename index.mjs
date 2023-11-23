@@ -65,8 +65,12 @@ logger.colorWheel = function*() {
 logger.colors = logger.colorWheel()
 logger.level = 3
 
+async function loadPkgJson(folder) {
+  return JSON.parse(await readFile(join(folder, 'package.json')))
+}
+
 async function loadWorkspaces() {
-  return JSON.parse(await readFile('package.json')).workspaces
+  return (await loadPkgJson('.')).workspaces
     .flatMap(entry => globSync(entry))
     .filter(pkg => existsSync(join(pkg, 'package.json')))
 }
@@ -90,9 +94,24 @@ function collectResources(pkg) {
 
   const exported = Object
     .keys(pkg.exports || {})
-    .flatMap(item => Object.values(pkg.exports[item]))
+    .flatMap(item => {
+      if (typeof pkg.exports[item] === 'string') {
+        return [pkg.exports[item]]
+      } else if (typeof pkg.exports[item] === 'object') {
+        return Object.values(pkg.exports[item])
+      } else {
+        console.error(
+          'ERROR: unknown export type',
+          typeof pkg.exports[item],
+          '; expected string or object'
+        )
+        process.exit(1)
+      }
+    })
 
-  return [...exported, pkg.main, pkg.module].filter(x => x)
+  return [...exported, pkg.main, pkg.module]
+    .filter(x => x)
+    .filter((x, index, arr) => arr.indexOf(x) === index)
 }
 
 function resolveDependencies(packages) {
@@ -101,7 +120,7 @@ function resolveDependencies(packages) {
     .map(pkg => ({
       ...pkg,
       // build a list of nodes that depend on this package
-      nodes: Object.keys({ ...pkg.devDependency, ...pkg.dependency })
+      nodes: Object.keys({ ...pkg.devDependency, ...pkg.dependencies })
         .map(dep => packages.find(p => p.name === dep))
         .filter(x => x),
     }))
@@ -116,7 +135,7 @@ function resolveDependencies(packages) {
 function injectLogger(packages, script) {
   return packages.map(pkg => ({
     ...pkg,
-    log: logger(`${pkg.name}/${script}:`),
+    log: logger(`${pkg.name}:${script}:`),
   }))
 }
 
@@ -133,6 +152,41 @@ function filterOutNoopTasks(projects, script) {
     }))
 }
 
+async function filterDownToSelectedWorkspace(projects, workspace) {
+  async function resolveWorkspaceProjectName(wrkspc) {
+    return (await loadPkgJson(wrkspc)).name
+  }
+
+  async function resolveWorkspacesProjectName(workspaces) {
+    return Promise.all(workspaces.map(resolveWorkspaceProjectName))
+  }
+
+  function resolveProjects(selected) {
+    return selected.map(prj => projects.find(p => p.name === prj))
+  }
+
+  function collectDependenciesForProject(project) {
+    const deps = resolveProjects(project.deps)
+    if (deps.length > 0) {
+      return [...deps, ...deps.flatMap(dep => collectDependenciesForProject(dep))]
+    } else {
+      return deps
+    }
+  }
+
+  function collectDependenciesForProjects(projects) {
+    return [
+      ...projects,
+      ...projects.flatMap(prj => collectDependenciesForProject(prj)),
+    ]
+  }
+
+  const workspaceProjectNames = await resolveWorkspacesProjectName(workspace.split(','))
+  const selectedProjects = resolveProjects(workspaceProjectNames)
+
+  return workspace ? collectDependenciesForProjects(selectedProjects) : projects
+}
+
 function getIndependentProjects(projects) {
   // find all tasks that currently have no dependencies
   return projects.filter(project => project.deps.length === 0)
@@ -140,25 +194,42 @@ function getIndependentProjects(projects) {
 
 const events = new EventEmitter()
 
-function executeProjectScript(project, script, ...args) {
-  project.log.info('> npm', ...[...args, 'run', script])
-
-  const cmd = spawn('npm', [...args, 'run', script], { cwd: project.cwd })
-  const reader = readline.createInterface({ input: cmd.stdout })
-  reader.on('line', data => {
+function printCommandOutput(project, input) {
+  readline.createInterface({ input }).on('line', data => {
     project.log.always(data.toString())
+  })
+}
+
+function notifyProjectBuildFinished(project, input) {
+  readline.createInterface({ input }).on('line', data => {
     if (/^built in .*/.test(data.toString())) {
       events.emit('rebuilt', project)
     }
   })
+}
+
+function executeProjectScript(project, script, ...args) {
+  project.log.info('> npm', ...[...args, 'run', script])
+
+  const cmd = spawn('npm', [...args, 'run', script], { cwd: project.cwd })
+  cmd.on('exit', err => {
+    if (err) {
+      process.exit(err)
+    } else {
+      events.emit('finished', project)
+    }
+  })
+  notifyProjectBuildFinished(project, cmd.stdout)
+  printCommandOutput(project, cmd.stdout)
+  printCommandOutput(project, cmd.stderr)
 
   project.log.debug('> started execution of', script, 'in', project.cwd)
 }
 
-async function waitForTaskToProduceResources(item, { delay }) {
+async function waitForTaskToProduceResources(item, { delay, verbose, timeout }) {
   if (item.resources.length > 0) {
     item.log.debug('> waiting for:', item.resources)
-    await waitOn({ resources: item.resources, delay })
+    await waitOn({ resources: item.resources, delay, timeout, log: verbose })
     item.log.debug('> resources created.')
   }
 }
@@ -194,11 +265,11 @@ function getAdditionalArgs({ quiet }) {
   return args
 }
 
-async function executeTasks(tasks, script, { delay, quiet }) {
+async function executeTasks(tasks, script, { delay, timeout, quiet, verbose }) {
   // execute each selected task
   return Promise.all(tasks.map(async task => {
     executeProjectScript(task, script, ...getAdditionalArgs({ quiet }))
-    await waitForTaskToProduceResources(task, { delay })
+    await waitForTaskToProduceResources(task, { delay, timeout, verbose })
   }))
 }
 
@@ -220,25 +291,33 @@ function installViteJsReloadHack(projects) {
   })
 }
 
-async function main(script, { delay, quiet, viteReloadHack }) {
+async function main(script, {
+  delay,
+  timeout,
+  quiet,
+  verbose,
+  viteReloadHack,
+  workspace
+}) {
   const log = logger('main')
+  if (quiet) logger.level = 2
+  if (verbose) logger.level = 5
 
   const workspaces = await loadWorkspaces()
   log.debug('workspaces', workspaces)
 
-  if (quiet) logger.level = 2
   const packages = injectLogger(await loadPackages(workspaces), script)
   log.debug('packages', packages)
 
   const projects = resolveDependencies(packages)
   log.debug('dependencies', projects)
 
-  const tasks = filterOutNoopTasks(projects, script)
+  const tasks = await filterDownToSelectedWorkspace(filterOutNoopTasks(projects, script), workspace)
   log.debug('tasks', tasks)
 
   while (tasks.length > 0) {
     const current = getIndependentProjects(tasks)
-    await executeTasks(current, script, { delay, quiet })
+    await executeTasks(current, script, { delay, timeout: timeout * 1000, quiet, verbose })
     dequeueTasks(current, tasks)
     clearDependencyToTasks(current, tasks)
   }
@@ -253,7 +332,10 @@ program
   .version(pkg.version)
   .argument('[script]', 'Script to execute', 'dev')
   .option('-q, --quiet', 'Be quiet')
-  .option('-d, --delay', 'Additional time to wait after the resource is created (default: 200ms)', 200)
+  .option('-v, --verbose', 'Be verbose')
+  .option('-d, --delay <ms>', 'Additional time to wait after the resource is created (default: 200ms)', 200)
+  .option('-t, --timeout <s>', 'Max time to wait for resources to be generated (default: 10s)', 10)
+  .option('-w, --workspace <workspace>', 'Run only the given workspace and its dependencies', '')
   .option('--vite-reload-hack', 'Install a hack that kicks dependent projects when a dependency is rebuilt')
   .action(main)
   .parse(process.argv)
