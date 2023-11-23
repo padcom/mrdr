@@ -70,7 +70,7 @@ async function loadPkgJson(folder) {
 }
 
 async function loadWorkspaces() {
-  return (await loadPkgJson('.')).workspaces
+  return ((await loadPkgJson('.')).workspaces || [])
     .flatMap(entry => globSync(entry))
     .filter(pkg => existsSync(join(pkg, 'package.json')))
 }
