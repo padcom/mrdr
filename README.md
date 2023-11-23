@@ -114,14 +114,17 @@ In the strictest sense you don't need them but it is surely a nice to have thing
 Usage: mrdr [options] [script]
 
 Arguments:
-  script              Script to execute (default: "dev")
+  script                       Script to execute (default: "dev")
 
 Options:
-  -V, --version       output the version number
-  -q, --quiet         Be quiet
-  -d, --delay         Additional time to wait after the resource is created (default: 200ms)
-  --vite-reload-hack  Install a hack that kicks dependent projects when a dependency is rebuilt
-  -h, --help          display help for command
+  -V, --version                output the version number
+  -q, --quiet                  Be quiet
+  -v, --verbose                Be verbose
+  -d, --delay <ms>             Additional time to wait after the resource is created (default: 200ms) (default: 200)
+  -t, --timeout <s>            Max time to wait for resources to be generated (default: 10s) (default: 10)
+  -w, --workspace <workspace>  Run only the given workspace and its dependencies (default: "")
+  --vite-reload-hack           Install a hack that kicks dependent projects when a dependency is rebuilt
+  -h, --help                   display help for command
 ```
 
 ### Running tasks
