@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile, utimes } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { exec, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import readline from 'node:readline'
 import { join } from 'node:path'
 import waitOn from 'wait-on'

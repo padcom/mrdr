@@ -1,0 +1,7 @@
+{
+  "workspaces": [
+    "packages/a",
+    "packages/b",
+    "packages/c"
+  ]
+}

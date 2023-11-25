@@ -1,0 +1,17 @@
+{
+  "name": "b",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build -w",
+    "build": "vite build"
+  },
+  "exports": {
+    ".": {
+      "default": "./dist/b.js",
+      "require": "./dist/b.umd.cjs"
+    }
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

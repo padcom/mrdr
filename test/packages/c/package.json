@@ -1,0 +1,29 @@
+{
+  "name": "c",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build -w",
+    "build": "vite build"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "default": "./dist/c.js",
+      "require": "./dist/c.umd.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "dependencies": {
+    "b": "*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.0",
+    "@vue/tsconfig": "^0.4.0",
+    "typescript": "5.0.4",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.6.3",
+    "vue": "^3.3.8"
+  }
+}
