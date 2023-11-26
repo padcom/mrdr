@@ -111,21 +111,58 @@ In the strictest sense you don't need them but it is surely a nice to have thing
 `mrdr` is a very young utility so the options are few at the moment:
 
 ```
-Usage: mrdr [options] [script]
+Usage: mrdr [options] [command]
+
+Options:
+  -V, --version           output the version number
+  -h, --help              display help for command
+
+Commands:
+  run [options] [script]  Run a task recursively within the monorepo
+  ls [options]            List dependencies between projects
+  help [command]          display help for command
+```
+
+The `run` command is for running tasks
+
+```
+Usage: mrdr run [options] [script]
 
 Arguments:
   script                       Script to execute (default: "dev")
 
 Options:
-  -V, --version                output the version number
   -q, --quiet                  Be quiet
   -v, --verbose                Be verbose
+  -P, --prefix <path>          Workspaces root (default: ".")
   -d, --delay <ms>             Additional miliseconds to wait after the resource is created (default: 200)
   -t, --timeout <s>            Max time in seconds to wait for resources to be generated (default: 30)
   -w, --workspace <workspace>  Run only the given workspace and its dependencies (default: "")
   -C, --clean [task]           Call the "clean" task before building a project; defaults to "clean" task
+  --no-wait                    Do not wait for resources to be created (useful for running the "clean" task alone)
   --vite-reload-hack           Install a hack that kicks dependent projects when a dependency is rebuilt
   -h, --help                   display help for command
+```
+
+The `ls` task is for listing dependencies between projects:
+
+```
+Usage: mrdr ls [options]
+
+List dependencies between projects
+
+Options:
+  -w, --workspace <workspace>  Run only the given workspace and its dependencies (default: "")
+  -P, --prefix <path>          Workspaces root (default: ".")
+  -h, --help                   display help for command
+```
+
+### Listing dependencies
+
+It is possible to have the dependencies between projects listed, possibly for debugging
+
+```
+npx mrdr ls
 ```
 
 ### Running tasks

@@ -12,7 +12,7 @@
         "<node_internals>/**"
       ],
       "program": "${workspaceFolder}/cli.mjs",
-      "args": ["dev", "--prefix=test", "--vite-reload-hack"]
+      "args": ["clean", "--prefix=test", "--vite-reload-hack", "-w packages/a,packages/c", "--no-wait"]
     }
   ]
 }
