@@ -25,7 +25,7 @@
     "url": "https://www.patreon.com/padcom"
   },
   "bin": {
-    "mrdr": "index.mjs"
+    "mrdr": "cli.mjs"
   },
   "scripts": {
     "build": "",
