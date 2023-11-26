@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite build -w",
-    "build": "vite build"
+    "build": "vite build",
+    "clean": "rimraf dist"
   },
   "files": [
     "dist"
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.0",
     "@vue/tsconfig": "^0.4.0",
+    "rimraf": "^5.0.5",
     "typescript": "5.0.4",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^3.6.3",

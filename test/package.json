@@ -2,6 +2,7 @@
   "workspaces": [
     "packages/a",
     "packages/b",
-    "packages/c"
+    "packages/c",
+    "packages/d"
   ]
 }

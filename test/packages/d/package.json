@@ -1,0 +1,9 @@
+{
+  "name": "d",
+  "module": "index.mjs",
+  "exports": {
+    ".": {
+      "import": "./index.mjs"
+    }
+  }
+}
