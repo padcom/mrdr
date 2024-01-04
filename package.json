@@ -29,6 +29,7 @@
   },
   "scripts": {
     "build": "",
+    "version": "npm install && npm run build",
     "prepublishOnly": "npm install && npm run build"
   },
   "dependencies": {
