@@ -69,7 +69,14 @@ async function executeTask(task, script, { clean, verbose, quiet, delay, timeout
     args: getAdditionalArgs({ quiet }),
   })
 
-  if (wait) await waitForResources(task.resources, { verbose, delay, timeout })
+  if (wait) {
+    try {
+      await waitForResources(task.resources, { verbose, delay, timeout })
+    } catch (e) {
+      console.error(e.message)
+      process.exit(1)
+    }
+  }
 }
 
 function executeTasks(tasks, script, { clean, verbose, quiet, delay, timeout, wait }) {
