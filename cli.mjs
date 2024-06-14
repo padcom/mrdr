@@ -11,7 +11,7 @@ import { collectResources, waitForResources } from './lib/resources.mjs'
 import { runWorkspaceScript, startWorkspaceScript } from './lib/executor.mjs'
 import { installViteJsReloadHack } from './lib/vite.mjs'
 
-import pkg from './package.json' assert { type: 'json' }
+import pkg from './package.json' with { type: 'json' }
 
 async function list({ prefix, workspace }) {
   // workspace, if specified, is given without prefix (as it is defined in package.json)
