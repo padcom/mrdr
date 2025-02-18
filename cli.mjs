@@ -1,157 +1,15 @@
 #!/usr/bin/env node
 
-import { join, resolve } from 'node:path'
 import { program } from 'commander'
-import { deps } from 'wdepres'
-import printTree from 'print-tree'
 
 import './lib/polyfill.mjs'
-import { logger } from './lib/logger.mjs'
-import { collectResources, waitForResources } from './lib/resources.mjs'
-import { runWorkspaceScript, startWorkspaceScript } from './lib/executor.mjs'
-import { installViteJsReloadHack } from './lib/vite.mjs'
+import { main } from './lib/commands/main.mjs'
+import { list } from './lib/commands/list.mjs'
+import { listDependencies as deps } from './lib/commands/list-dependencies.mjs'
+import { tree } from './lib/commands/tree.mjs'
+import { verify } from './lib/commands/verify.mjs'
 
 import pkg from './package.json' with { type: 'json' }
-
-async function list({ prefix, workspace }) {
-  // workspace, if specified, is given without prefix (as it is defined in package.json)
-  const workspaces = workspace
-    ? workspace.split(',').map(wrkspc => join(prefix, wrkspc.trim()))
-    : false
-
-  // collect workspace dependencies
-  const dependencies = await deps(prefix)
-
-  const root = workspaces.length > 0
-    ? workspaces.flatMap(workspace => [dependencies.find(prj => resolve(prj.path) === resolve(workspace))]).uniq()
-    : dependencies
-
-  printTree(
-    { package: { name: prefix, workspaceDependencies: root } },
-    node => node?.package?.name + (node?.package?.version ? `@${node?.package?.version}` : '') || '',
-    node => node?.package?.workspaceDependencies || [],
-  )
-}
-
-function getTasksWithNoDependencies(tasks) {
-  return tasks.filter(task => task.deps.length === 0)
-}
-
-function filterOutNotSelectedProjects(projects, workspace) {
-  workspace = projects.find(project => project.path === workspace)
-  if (!workspace) return []
-
-  // guard from cyclic dependencies
-  if (workspace.selected) return []
-  workspace.selected = true
-
-  return [workspace, ...workspace.depWorkspaces.flatMap(dep => filterOutNotSelectedProjects(projects, dep))]
-}
-
-function getAdditionalArgs({ quiet }) {
-  const args = []
-  if (quiet) args.push('--silent')
-
-  return args
-}
-
-async function executeTask(task, script, { clean, verbose, quiet, delay, timeout, wait }) {
-  if (clean && task.scripts[clean]) {
-    await runWorkspaceScript(task.path, clean || 'clean', {
-      verbose,
-      logger: task.logger.info,
-      args: getAdditionalArgs({ quiet }),
-    })
-  }
-  startWorkspaceScript(task.path, script, {
-    verbose,
-    logger: task.logger.info,
-    args: getAdditionalArgs({ quiet }),
-  })
-
-  if (wait) {
-    try {
-      await waitForResources(task.resources, { verbose, delay, timeout })
-    } catch (e) {
-      console.error(e.message)
-      process.exit(1)
-    }
-  }
-}
-
-function executeTasks(tasks, script, { clean, verbose, quiet, delay, timeout, wait }) {
-  return Promise.all(tasks.map(task => executeTask(task, script, { clean, verbose, quiet, delay, timeout, wait })))
-}
-
-function removeDependencyToCurrentTasks(tasks, current) {
-  tasks.forEach(task => {
-    current.forEach(item => {
-      task.deps = task.deps.filter(dep => dep !== item.name)
-    })
-  })
-}
-
-function removeCurrentTasks(tasks, current) {
-  current.forEach(task => {
-    const index = tasks.indexOf(task)
-    tasks.splice(index, 1)
-  })
-}
-
-async function main(script, {
-  prefix,
-  delay,
-  timeout,
-  quiet,
-  verbose,
-  viteReloadHack,
-  workspace,
-  clean,
-  wait,
-} = {}) {
-  if (quiet) logger.level = 2
-  if (verbose) logger.level = 5
-
-  // `clean` can either be a boolean (in which case we default to 'clean')
-  clean = clean ? (typeof clean === 'string' ? clean : 'clean') : false
-  // timeout is given in seconds and everywhere we use time values it is in ms
-  timeout = timeout * 1000
-  // workspace, if specified, is given without prefix (as it is defined in package.json)
-  workspace = workspace
-    ? workspace.split(',').map(wrkspc => join(prefix, wrkspc.trim()))
-    : false
-
-  // collect workspace dependencies
-  const dependencies = await deps(prefix)
-
-  // convert dependencies into projects list
-  const projects = dependencies
-    // create a list of data structures that are appropriate for the task at hand
-    .map(dependency => ({
-      name: dependency.package.name,
-      path: dependency.path,
-      scripts: dependency.package.scripts || {},
-      resources: collectResources(dependency.path, dependency.package),
-      deps: dependency.package.workspaceDependencies.map(d => d.package.name),
-      depWorkspaces: dependency.package.workspaceDependencies.map(d => d.path),
-      logger: logger(`${dependency.package.name}:${script}:`),
-    }))
-
-  // collect list of tasks from projects to execute
-  const tasks = workspace
-    ? workspace.flatMap(wrkspc => filterOutNotSelectedProjects(projects, wrkspc)).uniq(wrkspc => wrkspc.path)
-    : projects
-
-  // main loop - repeat until there is something to execute
-  while (tasks.length > 0) {
-    const current = getTasksWithNoDependencies(tasks)
-    await executeTasks(current, script, { clean, verbose, quiet, delay, timeout, wait })
-    removeDependencyToCurrentTasks(tasks, current)
-    removeCurrentTasks(tasks, current)
-  }
-
-  if (viteReloadHack) installViteJsReloadHack(dependencies.map(dep => dep.path))
-}
 
 program
   .name(pkg.name)
@@ -164,6 +22,7 @@ program
   .option('-q, --quiet', 'Be quiet')
   .option('-v, --verbose', 'Be verbose')
   .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .option('-l, --lead-delay <ms>', 'Miliseconds to wait after the process have been started', 1500)
   .option('-d, --delay <ms>', 'Additional miliseconds to wait after the resource is created', 200)
   .option('-t, --timeout <s>', 'Max time in seconds to wait for resources to be generated', 30)
   .option('-w, --workspace <workspace>', 'Run only the given workspace and its dependencies', '')
@@ -173,11 +32,36 @@ program
   .action(main)
 
 program
-  .command('ls')
+  .command('list')
+  .alias('ls')
   .description('List dependencies between projects')
   .option('-w, --workspace <workspace>', 'List only the given workspace and its dependencies', '')
   .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .option('-p, --list-paths', 'Print workspace path instead of package name', false)
   .action(list)
+
+program
+  .command('deps')
+  .alias('ls')
+  .description('List dependencies between projects')
+  .option('-w, --workspace <workspace>', 'List only the given workspace and its dependencies', '')
+  .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .option('-p, --list-paths', 'Print workspace path instead of package name', false)
+  .action(deps)
+
+program
+  .command('tree')
+  .description('List dependencies between projects in a tree')
+  .option('-w, --workspace <workspace>', 'List only the given workspace and its dependencies', '')
+  .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .action(tree)
+
+program
+  .command('verify')
+  .description('Verify that the dependencies of the given workspace are all tagged')
+  .option('-w, --workspace <workspace>', 'Workspace to verify dependencies')
+  .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .action(verify)
 
 program
   .parse(process.argv)
