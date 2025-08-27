@@ -70,6 +70,8 @@ program
   .description('Bump the version of a workspace, commit and tag it')
   .option('-w, --workspace <workspace>', 'Workspace to verify dependencies')
   .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .option('-q, --quiet', 'Be quiet')
+  .option('-v, --verbose', 'Be verbose')
   .option('-X, --validate', 'Validate that the dependencies of the given workspace are all tagged', false)
   .action(version)
 
