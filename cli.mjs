@@ -8,6 +8,7 @@ import { list } from './lib/commands/list.mjs'
 import { listDependencies as deps } from './lib/commands/list-dependencies.mjs'
 import { tree } from './lib/commands/tree.mjs'
 import { verify } from './lib/commands/verify.mjs'
+import { version } from './lib/commands/version.mjs'
 
 import pkg from './package.json' with { type: 'json' }
 
@@ -62,6 +63,15 @@ program
   .option('-w, --workspace <workspace>', 'Workspace to verify dependencies')
   .option('-P, --prefix <path>', 'Workspaces root', '.')
   .action(verify)
+
+program
+  .command('version')
+  .argument('<level>', 'Level to bump (patch, minor, major)')
+  .description('Bump the version of a workspace, commit and tag it')
+  .option('-w, --workspace <workspace>', 'Workspace to verify dependencies')
+  .option('-P, --prefix <path>', 'Workspaces root', '.')
+  .option('-X, --validate', 'Validate that the dependencies of the given workspace are all tagged', false)
+  .action(version)
 
 program
   .parse(process.argv)
