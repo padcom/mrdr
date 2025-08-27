@@ -72,7 +72,7 @@ program
   .option('-P, --prefix <path>', 'Workspaces root', '.')
   .option('-v, --verbose', 'Be verbose')
   .option('-X, --validate', 'Validate that the dependencies of the given workspace are all tagged', false)
-  .option('--dry-run', 'Dry run, just do the changes but don\'t commit or tag')
+  .option('--dry-run', 'Dry run, do no changes, commit or tag')
   .action(version)
 
 program
