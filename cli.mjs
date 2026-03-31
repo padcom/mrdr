@@ -75,5 +75,13 @@ program
   .option('--dry-run', 'Dry run, do no changes, commit or tag')
   .action(version)
 
+// import { waitForResources } from './lib/resources.mjs'
+
+// program
+//   .command('test')
+//   .action(async () => console.log(
+//      await waitForResources(['./package.json', './package.json'], { delay: 1000, timeout: 3000 })
+//   ))
+
 program
   .parse(process.argv)

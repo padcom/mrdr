@@ -33,13 +33,13 @@
     "prepublishOnly": "npm install && npm run build"
   },
   "dependencies": {
+    "@padcom/wait-for": "^0.0.1",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "glob": "^10.3.10",
     "ini": "5.0.0",
     "print-tree": "^0.1.5",
     "semver": "7.7.2",
-    "wait-on": "^7.2.0",
     "wdepres": "^0.0.1"
   },
   "devDependencies": {

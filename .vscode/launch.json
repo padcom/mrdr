@@ -7,12 +7,22 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "mrdr clean",
       "skipFiles": [
         "<node_internals>/**"
       ],
       "program": "${workspaceFolder}/cli.mjs",
       "args": ["clean", "--prefix=test", "--vite-reload-hack", "-w packages/a,packages/c", "--no-wait"]
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "mrdr test",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/cli.mjs",
+      "args": ["test"]
+    },
   ]
 }
