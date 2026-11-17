@@ -40,7 +40,7 @@
     "ini": "5.0.0",
     "print-tree": "^0.1.5",
     "semver": "7.7.2",
-    "wdepres": "^0.0.1"
+    "wdepres": "^0.1.0"
   },
   "devDependencies": {
     "@types/chalk": "^2.2.0"
